@@ -2,12 +2,18 @@
 
 Converts between distance formats
 
-### Installation
+## Installation
 
 ```bash
 git clone git@github.com:lskatz/dists2trees.git
 export PATH=$PATH:$(realpath dists2trees/scripts)
 ```
+
+This package depends on
+
+* perl
+* gotree
+* quicktree
 
 ## Usage
 
