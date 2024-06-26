@@ -50,8 +50,9 @@ cat distances.tsv
 ```
 
 Convert to phylip from tsv format.
-In this example since distances back and forth between samples are not equal,
+In this example since distances back and forth between samples are not defined,
 there are stderr messages showing what was corrected.
+If distances are defined and not equal, they will be averaged.
 This correction happens when you specify `--symmetric`.
 
 ```bash
