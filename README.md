@@ -116,6 +116,11 @@ done > bootstraps.dnd
 # => bootstraps.dnd should have 100 trees in it now
 # Get rid of the folder with distances in it, now that we have BS trees
 rm -rf bootstraps
+
+head -n 3 bootstraps.dnd 
+(2:3739.5,(3:9834,1:1271):15834,4:3283.5);
+(2:3754.5,(3:9849,1:1338):15753.5,4:3279.5);
+(2:3702.75,(3:9850.75,1:1329.25):15806.75,4:3300.25);
 ```
 
 Run `gotree` to add supports
