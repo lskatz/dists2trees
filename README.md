@@ -2,7 +2,12 @@
 
 Converts between distance formats
 
-TODO: transform distances to trees
+### Installation
+
+```bash
+git clone git@github.com:lskatz/dists2trees.git
+export PATH=$PATH:$(realpath dists2trees/scripts)
+```
 
 ## Usage
 
@@ -21,7 +26,7 @@ TODO: transform distances to trees
 
 ## Examples
 
-Convert between tsv and phylip format
+### Convert between tsv and phylip format
 
 Make example data:
 
@@ -56,7 +61,7 @@ If distances are defined and not equal, they will be averaged.
 This correction happens when you specify `--symmetric`.
 
 ```bash
-perl scripts/dists2.pl --outformat phylip --symmetric | column -t
+perl scripts/dists2.pl --outformat phylip --symmetric < distances.tsv | column -t
 dists2.pl: Setting 2 1 to 17766
 dists2.pl: Setting 3 1 to 11151
 dists2.pl: Setting 4 1 to 23481
@@ -68,4 +73,78 @@ dists2.pl: Setting 4 3 to 25817
 2  17766  0      32503  7018
 3  11151  32503  0      25817
 4  23481  7018   25817  0
+```
+
+### Make a tree
+
+```bash
+perl scripts/dists2.pl --outformat phylip --symmetric < distances.tsv | \
+  perl scripts/diststree.pl 
+
+(2:3751.75,(3:9843.75,1:1307.25):15807.25,4:3266.25);
+```
+
+### Make bootstraps
+
+Bootstraps are a test of how different kinds of perturbations or randomness will affect your tree.
+So for this example, I will make some randomness in the input.
+
+```bash
+mkdir bootstraps
+for i in {1..100}; do
+  cat distances.tsv | \
+    perl -lane '
+      # give distances ±50
+      $rand = int(rand(100)); 
+      $rand = $rand - 50;  
+      $F[2] += $rand; 
+      # Print the new value to stdout
+      print join("\t", @F);
+    ' > bootstraps/dist.$i.tsv; 
+  # Transform these distances to phylip and then into a tree.
+  # The trees are being printed to stdout, but
+  # stdout will be printed to a file at the end of the loop.
+  perl scripts/dists2.pl --symmetric --outformat phylip < bootstraps/dist.$i.tsv | \
+    perl scripts/diststree.pl 
+done > bootstraps.dnd
+# => bootstraps.dnd should have 100 trees in it now
+# Get rid of the folder with distances in it, now that we have BS trees
+rm -rf bootstraps
+```
+
+Run `gotree` to add supports
+
+```bash
+perl scripts/dists2.pl --outformat phylip --symmetric < distances.tsv | \
+  perl scripts/diststree.pl | \
+  gotree compute support classical --bootstrap bootstraps.dnd > withbs.dnd
+Classical Support
+Start       : 26 Jun 24 14:55 EDT
+Input tree  : stdin
+Boot trees  : bootstraps.dnd
+Output tree : stdout
+CPUs        : 1
+dists2.pl: Setting 2 1 to 17766
+dists2.pl: Setting 3 1 to 11151
+dists2.pl: Setting 4 1 to 23481
+dists2.pl: Setting 3 2 to 32503
+dists2.pl: Setting 4 2 to 7018
+dists2.pl: Setting 4 3 to 25817
+End         : 26 Jun 24 14:55 EDT
+```
+
+Draw the tree for fun
+
+```bash
+cat withbs.dnd
+(2:3751.75,(3:9843.75,1:1307.25)1:15807.25,4:3266.25);
+
+cat withbs.dnd | gotree draw text
++---------------------------- 2                                                                                                                                                                                   
+|                                                                                                                                                                                                                 
+|                                                                                                                          +--------------------------------------------------------------------------- 3         
+|--------------------------------------------------------------------------------------------------------------------------|                                                                                      
+|                                                                                                                          +--------- 1                                                                           
+|                                                                                                                                                                                                                 
++------------------------ 4             
 ```
