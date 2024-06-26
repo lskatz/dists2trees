@@ -17,7 +17,17 @@ This package depends on
 
 ## Usage
 
+### Make a tree from distances
+
 ```text
+  Usage: diststree.pl [options] < infile > outfile.newick
+  --help              This useful help menu
+```
+
+### Convert between distances formats
+
+```text
+
   Usage: dists2.pl [options] < infile > outfile
   --informat  FORMAT  The input format.  Default: tsv
   --outformat FORMAT  The output format. Default: tsv
