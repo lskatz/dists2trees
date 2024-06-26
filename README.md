@@ -1,29 +1,21 @@
-# template-perl
-A simple template for perl projects
+# dists2trees
 
-# Usage
+Converts between distance formats
 
-Click the button at the top of GitHub that says `Use this template` and then edit away
+TODO: transform distances to trees
 
-# Contents
+## Usage
 
-`Makefile.pl` - Running this file with `perl Makefile.PL` creates an actual `Makefile` with certain usages such as
+```text
+  Usage: dists2.pl [options] < infile > outfile
+  --informat  FORMAT  The input format.  Default: tsv
+  --outformat FORMAT  The output format. Default: tsv
+  --symmetric         Make the matrix symmetric. Default: off
+  --help              This useful help menu
 
-* `make`
-* `make test`
-* `make install`
-* `make manifest`
-* `make dist`
-
-## scripts
-
-`template.pl` A single script that has basic modules and usage. Rename this file to what suits you.
-You can add more scripts here.
-
-## t
-
-`01_index.t` A single perl script that has a unit test in it. Rename `_index` to what your usage would be.
-You can add additional tests in this folder. There is a two digit number here in the script name(s) so that
-the scripts will be run in the correct order even though the system will sort alphabetically instead
-of numerically.
+  FORMAT can be: tsv, matrix, or phylip
+    where tsv is a three column format of sample1 sample2 distance
+    and matrix is a matrix of distances, tab separated, with a header of samples and a first column naming the sample. The first row of the first column needs to have a value but is not read.
+    and phylip is a standard format of distances
+```
 
