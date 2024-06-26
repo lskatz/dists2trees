@@ -124,7 +124,12 @@ sub makeSymmetric{
 sub printDistances{
   my ($distances, $format, $settings) = @_;
 
-  my @sample     = sort keys(%$distances);
+  my @sample = sort keys(%$distances);
+  # there is always one extra sample that does not appear in the set of first samples
+  # so we need to add it to the list of samples
+  push(@sample, keys(%{$$distances{$sample[0]}}));
+  # Now make the list unique again
+  @sample = sort do{my %seen; grep{!$seen{$_}++} @sample};
   my $numSamples = scalar(@sample);
 
   if($format eq 'phylip'){
