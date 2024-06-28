@@ -6,7 +6,10 @@ use Data::Dumper;
 use Getopt::Long;
 use File::Basename qw/basename/;
 use File::Temp qw/tempdir/;
+
+# Using gzip for large temporary files will save on disk I/O
 use IO::Compress::Gzip qw/gzip $GzipError/;
+use IO::Uncompress::Gunzip qw/gunzip $GunzipError/;
 
 use version 0.77;
 our $VERSION = '0.3.0';
@@ -51,8 +54,10 @@ sub matrixToPhylip{
   # Read the streaming input to get the number of samples
   # and to validate the column/row orders match.
   # Save to a temp file at the same time.
-  my $unvalidatedPhylip = "$$settings{tempdir}/unvalidated.phylip";
-  open(my $fh, ">", $unvalidatedPhylip) or die "ERROR: could not write to $unvalidatedPhylip: $!";
+  my $unvalidatedPhylip = "$$settings{tempdir}/unvalidated.phylip.gz";
+  my $z = new IO::Compress::Gzip $unvalidatedPhylip
+    or die "ERROR: could not write to $unvalidatedPhylip: $GzipError";
+  # Read stdin matrix
   my $header = <>;
   chomp($header);
   my @header = split /\t/, $header;
@@ -70,9 +75,9 @@ sub matrixToPhylip{
       die "ERROR: the number of distances for sample $sample1 (n=$numDists) does not match the number of samples in the header (n=$expectedSamples)";
     }
     # phylip format has spaces between fields
-    print $fh join("  ", $sample1, @dist)."\n";
+    print $z join("  ", $sample1, @dist)."\n";
   }
-  close $fh;
+  close $z;
 
   # Now we need to validate that the samples are in the same order
   # as the header
@@ -90,11 +95,12 @@ sub matrixToPhylip{
   # At this point it is validated and so plop the total 
   # number of samples on the top and send it on its way to stdout
   print "    $numSamples\n";
-  open(my $fh2, "<", $unvalidatedPhylip) or die "ERROR: could not read $unvalidatedPhylip: $!";
-  while(<$fh2>){
+  my $unz = new IO::Uncompress::Gunzip $unvalidatedPhylip
+    or die "ERROR: could not read $unvalidatedPhylip: $GunzipError";
+  while(<$unz>){
     print;
   }
-  close $fh2;
+  close $unz;
 }
 
 sub readDistances{
