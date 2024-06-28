@@ -8,9 +8,6 @@ use File::Basename qw/basename/;
 use File::Temp qw/tempdir/;
 use File::Which qw/which/;
 
-use version 0.77;
-our $VERSION = '0.1.1';
-
 local $0 = basename $0;
 sub logmsg{local $0=basename $0; print STDERR "$0: @_\n";}
 exit(main());

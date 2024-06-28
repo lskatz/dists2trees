@@ -5,9 +5,11 @@ use strict;
 use Data::Dumper;
 use Getopt::Long;
 use File::Basename qw/basename/;
+use File::Temp qw/tempdir/;
+use IO::Compress::Gzip qw/gzip $GzipError/;
 
 use version 0.77;
-our $VERSION = '0.1.1';
+our $VERSION = '0.3.0';
 
 local $0 = basename $0;
 sub logmsg{local $0=basename $0; print STDERR "$0: @_\n";}
@@ -15,17 +17,84 @@ exit(main());
 
 sub main{
   my $settings={};
-  GetOptions($settings,qw(help informat=s outformat=s symmetric)) or die $!;
+  GetOptions($settings,qw(help informat=s outformat=s symmetric tempdir=s verbose)) or die $!;
   usage() if($$settings{help} || -t STDIN);
 
   $$settings{informat}||="tsv";
   $$settings{outformat}||="tsv";
+  $$settings{tempdir} ||= tempdir("dists2.XXXXXX", TMPDIR => 1, CLEANUP => 1);
+  mkdir($$settings{tempdir});
 
-  my $distances = readDistances($$settings{informat}, $settings);
-  makeSymmetric($distances, $settings) if($$settings{symmetric});
-  printDistances($distances, $$settings{outformat}, $settings);
+  # special conversion cases
+  if($$settings{informat} eq 'matrix' && $$settings{outformat} eq 'phylip'){
+    if($$settings{verbose}){
+      logmsg "Detected a special case matrix => phylip and so I will use a special streaming operation instead of loading it all into memory";
+    }
+    matrixToPhylip($settings);
+  }
 
+  # General cases of conversion 
+  else{
+    my $distances = readDistances($$settings{informat}, $settings);
+    makeSymmetric($distances, $settings) if($$settings{symmetric});
+    printDistances($distances, $$settings{outformat}, $settings);
+  }
   return 0;
+}
+
+sub matrixToPhylip{
+  my ($settings) = @_;
+  # This will take about two passes:
+  # 1) make a temporary file that has the phylip contents while validating the input
+  # 2) print the phylip contents to stdout along with taxa count in the header
+
+  # Read the streaming input to get the number of samples
+  # and to validate the column/row orders match.
+  # Save to a temp file at the same time.
+  my $unvalidatedPhylip = "$$settings{tempdir}/unvalidated.phylip";
+  open(my $fh, ">", $unvalidatedPhylip) or die "ERROR: could not write to $unvalidatedPhylip: $!";
+  my $header = <>;
+  chomp($header);
+  my @header = split /\t/, $header;
+  my $topLeft = shift(@header); # Top left value doesn't strictly have a meaning here
+  my $expectedSamples = scalar(@header);
+  # We assume that the first column will have the samples sorted
+  # so that later we can check against @header.
+  my @sortedSample;
+  while(<>){
+    chomp;
+    my ($sample1, @dist) = split /\t/;
+    push(@sortedSample, $sample1);
+    if(scalar(@dist) != scalar(@header)){
+      my $numDists = scalar(@dist);
+      die "ERROR: the number of distances for sample $sample1 (n=$numDists) does not match the number of samples in the header (n=$expectedSamples)";
+    }
+    # phylip format has spaces between fields
+    print $fh join("  ", $sample1, @dist)."\n";
+  }
+  close $fh;
+
+  # Now we need to validate that the samples are in the same order
+  # as the header
+  my $numSamples = scalar(@sortedSample);
+  if($numSamples != $expectedSamples){
+    die "ERROR: the number of samples in the header ($expectedSamples) does not match the number of samples in the data ($numSamples)";
+  }
+  for(my $i=0; $i<$numSamples; $i++){
+    if($sortedSample[$i] ne $header[$i]){
+      die "ERROR: the sample order in the header does not match the order of the samples in the data\n"
+        . "The samples diverged at the $i-th sample: $sortedSample[$i] vs $header[$i]";
+    }
+  }
+
+  # At this point it is validated and so plop the total 
+  # number of samples on the top and send it on its way to stdout
+  print "    $numSamples\n";
+  open(my $fh2, "<", $unvalidatedPhylip) or die "ERROR: could not read $unvalidatedPhylip: $!";
+  while(<$fh2>){
+    print;
+  }
+  close $fh2;
 }
 
 sub readDistances{
@@ -107,12 +176,12 @@ sub makeSymmetric{
       my $dist2 = $$distances{$sample2}{$sample1};
       if(!$dist1 && $dist2){
         $$distances{$sample1}{$sample2} = $dist2;
-        logmsg "Setting $sample1 $sample2 to $dist2";
+        logmsg "Setting $sample1 $sample2 to $dist2" if($$settings{verbose});
       } elsif($dist1 && !$dist2){
         $$distances{$sample2}{$sample1} = $dist1;
-        logmsg "Setting $sample2 $sample1 to $dist1";
+        logmsg "Setting $sample2 $sample1 to $dist1 if($$settings{verbose})";
       } elsif($dist1 != $dist2){
-        logmsg "WARNING: $sample1 $sample2 has a distance of $dist1 while $sample2 $sample1 has a distance of $dist2. I am setting the distance to the average of the two.";
+        logmsg "WARNING: $sample1 $sample2 has a distance of $dist1 while $sample2 $sample1 has a distance of $dist2. I am setting the distance to the average of the two." if($$settings{verbose});
         my $avg = ($dist1 + $dist2)/2;
         $$distances{$sample1}{$sample2} = $avg;
         $$distances{$sample2}{$sample1} = $avg;
@@ -173,6 +242,10 @@ sub usage{
   --informat  FORMAT  The input format.  Default: tsv
   --outformat FORMAT  The output format. Default: tsv
   --symmetric         Make the matrix symmetric. Default: off
+  --verbose           Print more things to stderr
+  --tempdir   DIR     A temporary directory to use. 
+                      If not specified, then a temporary directory chosen by perl that will get deleted.
+                      If specified, then the directory will not be deleted.
   --help              This useful help menu
 
   FORMAT can be: tsv, matrix, or phylip
