@@ -5,9 +5,15 @@ use strict;
 use Data::Dumper;
 use Getopt::Long;
 use File::Basename qw/basename/;
+use File::Temp qw/tempdir/;
+
+use FindBin;
+use lib "$FindBin::RealBin/../lib/perl5";
+use lib "$FindBin::RealBin/../lib/perl5/x86_64-linux-thread-multi";
+
+use Dists2;
 
 use version 0.77;
-our $VERSION = '0.1.1';
 
 local $0 = basename $0;
 sub logmsg{local $0=basename $0; print STDERR "$0: @_\n";}
@@ -15,11 +21,13 @@ exit(main());
 
 sub main{
   my $settings={};
-  GetOptions($settings,qw(help informat=s outformat=s symmetric)) or die $!;
+  GetOptions($settings,qw(help tempdir=s informat=s outformat=s on-disk symmetric)) or die $!;
   usage() if($$settings{help} || -t STDIN);
 
   $$settings{informat}||="tsv";
   $$settings{outformat}||="tsv";
+  $$settings{"on-disk"}||=0;
+  $$settings{tempdir} ||= tempdir("dists2.XXXXXX", TMPDIR => 1, CLEANUP => 1);
 
   my $distances = readDistances($$settings{informat}, $settings);
   makeSymmetric($distances, $settings) if($$settings{symmetric});
@@ -32,12 +40,21 @@ sub readDistances{
   my ($format, $settings) = @_;
   my %dist;
 
+  if($$settings{'on-disk'}){
+    my $dbpath = $$settings{tempdir}. "/distances.db";
+    tie %dist, 'Tie::Hash::DBD', 'dbi:SQLite:dbname='.$dbpath,
+      {
+        str   => "Storable",
+      };
+  }
+
   if($format eq 'tsv'){
     while(<>){
       chomp;
       my ($sample1, $sample2, $dist) = split /\t/;
       $dist{$sample1}{$sample2} = $dist;
     }
+    die Dumper \%dist;
   } elsif($format eq 'matrix'){
     my $sample2 = <>;
     chomp($sample2);
@@ -173,6 +190,8 @@ sub usage{
   --informat  FORMAT  The input format.  Default: tsv
   --outformat FORMAT  The output format. Default: tsv
   --symmetric         Make the matrix symmetric. Default: off
+  --on-disk           Use an on-disk database to store the 
+                      distances temporarily.
   --help              This useful help menu
 
   FORMAT can be: tsv, matrix, or phylip

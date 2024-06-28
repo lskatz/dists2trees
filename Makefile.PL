@@ -14,11 +14,12 @@ my $preop = 'true';
   #'pod2text README.pod | tee $(DISTVNAME)/README > README';
 
 WriteMakefile1(
-  NAME         => 'template',
-  VERSION_FROM => 'scripts/template.pl',
+  NAME         => 'dists2trees',
+  VERSION_FROM => 'lib/perl5/Dists2.pm',
   AUTHOR => q{Lee S. Katz <gzu2@cdc.gov>},
   EXE_FILES    => [
-    "scripts/template.pl",
+    "scripts/dists2.pl",
+    "scripts/diststree.pl"
   ],
   PREREQ_PM    => {
     # Core modules
@@ -26,6 +27,7 @@ WriteMakefile1(
     'Data::Dumper'   => 0,
     'version'        => 0.77,
     'Getopt::Long'   => 0,
+
   },
   BUILD_REQUIRES => {
     'Test::More'     => 0.47,
@@ -42,8 +44,8 @@ WriteMakefile1(
     resources => {
       repository => {
         type => 'git',
-        url => 'git://github.com/lskatz/template.git',
-        web => 'https://github.com/lskatz/template',
+        url => 'git://github.com/lskatz/dists2trees.git',
+        web => 'https://github.com/lskatz/dists2trees',
       },
     },
   },
