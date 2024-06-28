@@ -3,6 +3,8 @@ use warnings;
 use FindBin qw/$RealBin/;
 use Test::More tests => 2;
 
+$ENV{PATH} = "$RealBin/../scripts:".$ENV{PATH};
+
 my $testTsv = "$RealBin/data/tallskinny.tsv";
 mkdir "$RealBin/data";
 END{
