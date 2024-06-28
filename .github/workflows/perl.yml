@@ -1,0 +1,39 @@
+name: Perl Unit Tests
+
+on: [push, pull_request]
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set up Perl
+              uses: shogo82148/actions-setup-perl@v1
+              with:
+                perl-version: '5.32'
+            
+            - name: Install QuickTree
+              run: |
+                wget https://github.com/khowe/quicktree/archive/refs/tags/v2.5.tar.gz
+                tar -xzf v2.5.tar.gz
+                make -C quicktree-2.5
+                ls -F quicktree-2.5
+                realpath quicktree-2.5 >> $GITHUB_PATH
+            - name: Install gotree
+              run: |
+                wget https://github.com/evolbioinfo/gotree/releases/download/v0.4.5/gotree_v0.4.5_amd64_linux
+                chmod +x gotree_v0.4.5_amd64_linux
+                # avoid having to set another directory for the path
+                mv -v gotree_v0.4.5_amd64_linux quicktree-2.5/gotree
+            - name: Install dependencies
+              run: |
+                perl Makefile.PL
+                cpanm --installdeps .
+                make
+
+            - name: Run unit tests
+              run: |
+                prove -r t/
