@@ -21,6 +21,7 @@ sub new {
     my $self = {
         settings => $settings,
         tempdir  => $tempdir,
+        cache    => {},
         db => $db,
         fh => $fh,
     };
@@ -40,7 +41,20 @@ sub FETCH{
 
 sub STORE{
     my ($self, $key, $value) = @_;
-    print { $self->{fh} } "$key\t$value\n";
+    $$self{cache}{$key} = $value;
+    if(scalar(keys($$self{cache})) > 1000){
+        $self->flush();
+    }
+}
+
+sub flush{
+    my ($self) = @_;
+    # Write the cache to the file
+    for my $key (sort keys %{$self->{cache}}){
+        print { $self->{fh} } "$key\t$self->{cache}{$key}\n";
+    }
+    close $self->{fh};
+    open($self->{fh}, ">>", $self->{db}) or die "ERROR: could not append to $self->{db}: $!";
 }
 
 sub DELETE{
