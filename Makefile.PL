@@ -30,6 +30,8 @@ WriteMakefile1(
 
     'IO::Compress::Gzip' => 0.1,
     'IO::Uncompress::Gunzip' => 0.1,
+
+    'File::Which'            => 0.1,
   },
   BUILD_REQUIRES => {
     'Test::More'     => 0.47,
