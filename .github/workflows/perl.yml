@@ -22,7 +22,12 @@ jobs:
                 make -C quicktree-2.5
                 ls -F quicktree-2.5
                 realpath quicktree-2.5 >> $GITHUB_PATH
-            
+            - name: Install gotree
+              run: |
+                wget https://github.com/evolbioinfo/gotree/releases/download/v0.4.5/gotree_v0.4.5_amd64_linux
+                chmod +x gotree_v0.4.5_amd64_linux
+                # avoid having to set another directory for the path
+                mv -v gotree_v0.4.5_amd64_linux quicktree-2.5/gotree
             - name: Install dependencies
               run: |
                 perl Makefile.PL
