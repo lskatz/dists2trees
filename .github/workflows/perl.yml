@@ -17,7 +17,9 @@ jobs:
 
             - name: Install dependencies
               run: |
+                perl Makefile.PL
                 cpanm --installdeps .
+                make
 
             - name: Run unit tests
               run: |
