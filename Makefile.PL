@@ -28,9 +28,6 @@ WriteMakefile1(
     'version'        => 0.77,
     'Getopt::Long'   => 0.1,
 
-    'IO::Compress::Gzip' => 0.1,
-    'IO::Uncompress::Gunzip' => 0.1,
-
     'File::Which'            => 0.1,
   },
   BUILD_REQUIRES => {

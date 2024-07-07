@@ -1,7 +1,8 @@
 use strict;
 use warnings;
 use FindBin qw/$RealBin/;
-use Test::More tests => 2;
+use File::Which qw/which/;
+use Test::More tests => 3;
 
 $ENV{PATH} = "$RealBin/../scripts:".$ENV{PATH};
 
@@ -12,6 +13,15 @@ END{
         unlink $file;
     }
 }
+
+subtest 'Dependencies' => sub{
+  my @exe = sort qw(diststree.pl dists2.pl quicktree);
+  for my $exe(@exe){
+    which($exe) or BAIL_OUT("ERROR: could not find $exe in your PATH");
+  }
+  pass("Found dependencies in PATH: ".join(", ", @exe));
+};
+
 subtest 'Make sample data' => sub{
   # Set the random seed to make this deterministic
   srand(42);

@@ -7,10 +7,6 @@ use Getopt::Long;
 use File::Basename qw/basename/;
 use File::Temp qw/tempdir/;
 
-# Using gzip for large temporary files will save on disk I/O
-use IO::Compress::Gzip qw/gzip $GzipError/;
-use IO::Uncompress::Gunzip qw/gunzip $GunzipError/;
-
 use version 0.77;
 our $VERSION = '0.3.0';
 
@@ -47,22 +43,17 @@ sub main{
 
 sub matrixToPhylip{
   my ($settings) = @_;
-  # This will take about two passes:
-  # 1) make a temporary file that has the phylip contents while validating the input
-  # 2) print the phylip contents to stdout along with taxa count in the header
-
-  # Read the streaming input to get the number of samples
-  # and to validate the column/row orders match.
-  # Save to a temp file at the same time.
-  my $unvalidatedPhylip = "$$settings{tempdir}/unvalidated.phylip.gz";
-  my $z = new IO::Compress::Gzip $unvalidatedPhylip
-    or die "ERROR: could not write to $unvalidatedPhylip: $GzipError";
+  
   # Read stdin matrix
   my $header = <>;
   chomp($header);
   my @header = split /\t/, $header;
   my $topLeft = shift(@header); # Top left value doesn't strictly have a meaning here
   my $expectedSamples = scalar(@header);
+
+  # The first line of the phylip file is the number of samples after four spaces
+  print "    $expectedSamples\n";
+
   # We assume that the first column will have the samples sorted
   # so that later we can check against @header.
   my @sortedSample;
@@ -75,9 +66,8 @@ sub matrixToPhylip{
       die "ERROR: the number of distances for sample $sample1 (n=$numDists) does not match the number of samples in the header (n=$expectedSamples)";
     }
     # phylip format has spaces between fields
-    print $z join("  ", $sample1, @dist)."\n";
+    print join("  ", $sample1, @dist)."\n";
   }
-  close $z;
 
   # Now we need to validate that the samples are in the same order
   # as the header
@@ -91,16 +81,6 @@ sub matrixToPhylip{
         . "The samples diverged at the $i-th sample: $sortedSample[$i] vs $header[$i]";
     }
   }
-
-  # At this point it is validated and so plop the total 
-  # number of samples on the top and send it on its way to stdout
-  print "    $numSamples\n";
-  my $unz = new IO::Uncompress::Gunzip $unvalidatedPhylip
-    or die "ERROR: could not read $unvalidatedPhylip: $GunzipError";
-  while(<$unz>){
-    print;
-  }
-  close $unz;
 }
 
 sub readDistances{
