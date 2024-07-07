@@ -23,12 +23,12 @@ WriteMakefile1(
   ],
   PREREQ_PM    => {
     # Core modules
-    'File::Basename' => 0.1,
-    'Data::Dumper'   => 0.1,
+    'File::Basename' => "2.86",
+    'Data::Dumper'   => "2.189",
     'version'        => 0.77,
-    'Getopt::Long'   => 0.1,
+    'Getopt::Long'   => "2.57",
 
-    'File::Which'            => 0.1,
+    'File::Which'            => "1.27",
   },
   BUILD_REQUIRES => {
     'Test::More'     => 0.47,
