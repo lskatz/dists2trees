@@ -7,7 +7,7 @@ use File::Basename qw/dirname/;
 use FindBin qw/$RealBin/;
 use Data::Dumper;
 
-use Test::More tests => 4;
+use Test::More tests => 5;
 
 $ENV{PATH} = "$RealBin/../scripts:".$ENV{PATH};
 
@@ -92,4 +92,29 @@ subtest 'matrix => phylip' => sub{
         close $fh2;
     }
     is($content3, $content4, "convergence converting back and forth: matrix => phylip => matrix => phylip");
-}
+};
+
+subtest 'stsv => matrix' => sub{
+    system("dists2.pl --informat stsv --outformat matrix --symmetric < $testTsv > $testTsv.matrix");
+    is($?, 0, "dists2.pl ran successfully on tsv => matrix");
+
+    # Back again
+    system("dists2.pl --informat matrix --outformat tsv --symmetric < $testTsv.matrix > $testTsv.matrix.tsv");
+    is($?, 0, "dists2.pl ran successfully on matrix => tsv");
+
+    # One more round to check file contents
+    system("dists2.pl --informat tsv --outformat matrix --symmetric < $testTsv.matrix.tsv > $testTsv.matrix.tsv.matrix");
+    system("dists2.pl --informat matrix --outformat tsv --symmetric < $testTsv.matrix.tsv.matrix > $testTsv.matrix.tsv.matrix.tsv");
+    # check to see if the last two tsv files are the same.
+    my ($content1,$content2);
+    {
+        local $/ = undef;
+        open(my $fh1, "<", "$testTsv.matrix.tsv") or die "ERROR: could not read $testTsv.matrix.tsv: $!";
+        $content1 = <$fh1>;
+        close $fh1;
+        open(my $fh2, "<", "$testTsv.matrix.tsv.matrix.tsv") or die "ERROR: could not read $testTsv.matrix.tsv.matrix.tsv: $!";
+        $content2 = <$fh2>;
+        close $fh2;
+    }
+    is($content1, $content2, "convergence converting back and forth: matrix => tsv => matrix => tsv");
+};

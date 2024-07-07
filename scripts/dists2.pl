@@ -8,7 +8,7 @@ use File::Basename qw/basename/;
 use File::Temp qw/tempdir/;
 
 use version 0.77;
-our $VERSION = '0.3.0';
+our $VERSION = '0.4.0';
 
 local $0 = basename $0;
 sub logmsg{local $0=basename $0; print STDERR "$0: @_\n";}
@@ -20,16 +20,24 @@ sub main{
   usage() if($$settings{help} || -t STDIN);
 
   $$settings{informat}||="tsv";
-  $$settings{outformat}||="tsv";
+  $$settings{outformat}||="stsv";
   $$settings{tempdir} ||= tempdir("dists2.XXXXXX", TMPDIR => 1, CLEANUP => 1);
   mkdir($$settings{tempdir});
 
   # special conversion cases
+  ## special case: matrix => phylip 
   if($$settings{informat} eq 'matrix' && $$settings{outformat} eq 'phylip'){
     if($$settings{verbose}){
       logmsg "Detected a special case matrix => phylip and so I will use a special streaming operation instead of loading it all into memory";
     }
     matrixToPhylip($settings);
+  }
+  ## special case: tsv => phylip
+  elsif($$settings{informat} eq 'stsv' && $$settings{outformat} eq 'matrix'){
+    if($$settings{verbose}){
+      logmsg "Detected a special case tsv => matrix and so I will use a special streaming operation instead of loading it all into memory";
+    }
+    stsvToMatrix($settings);
   }
 
   # General cases of conversion 
@@ -80,6 +88,78 @@ sub matrixToPhylip{
       die "ERROR: the sample order in the header does not match the order of the samples in the data\n"
         . "The samples diverged at the $i-th sample: $sortedSample[$i] vs $header[$i]";
     }
+  }
+}
+
+sub stsvToMatrix{
+  my ($settings) = @_;
+
+  # Read the distances until we see a different sample1
+  my $prevSample1 = "";
+  my @sortedSample;
+  my @firstSampleDist;
+  my $sample1idx = 0;
+  while(<>){
+    chomp;
+    my ($sample1, $sample2, $dist) = split /\t/;
+    if($sample1 ne $prevSample1 && $. > 1){
+      # Print the header
+      print join("\t", "samples", @sortedSample)."\n";
+      # Print the distances for the first sample
+      print join("\t", $prevSample1, @firstSampleDist)."\n";
+
+      # We have a new sample1:
+      #   Make sure it's the same as $sortedSample[0] 
+      #   print the new distance.
+      $sample1idx++;
+      if($sample1 ne $sortedSample[$sample1idx]){
+        die "ERROR: the sample $sample1 is not the same as the first sample in the sorted list in column 2. Expected: $sortedSample[0]";
+      }
+      print join("\t", $sample1, $dist);
+      # Go into a new loop so that we don't have to worry about "first sample logic" again
+      last;
+    }
+    # Ensure we have a distance for every sample
+    defined($dist) or die "ERROR: I don't see a distance for $sample1 $sample2 on line $.\n";
+    
+    # record the first sample distances
+    push(@sortedSample, $sample2);
+    push(@firstSampleDist, $dist);
+    $prevSample1 = $sample1;
+  }
+
+  my $numSamples = scalar(@sortedSample);
+  
+  # Now read the rest of the distances
+  for(; $sample1idx < $numSamples; $sample1idx++){
+    # If we just finished with the first sample, then we already printed the sample2 to screen
+    # and so we just need to skip over that first sample2
+    my $sample2idx = 0;
+    if($sample1idx == 1){
+      $sample2idx = 1;
+    }
+    # If this is any other sample, then print sample1
+    else{
+      print $sortedSample[$sample1idx];
+    }
+    for(; $sample2idx < $numSamples; $sample2idx++){
+      my $line = <>;
+      chomp($line);
+      my ($sample1, $sample2, $dist) = split /\t/, $line;
+      # Validate the sorted samples
+      if($sample1 ne $sortedSample[$sample1idx]){
+        die "ERROR: the sample $sample1 is not the same as the first sample in the sorted list in column 2. Expected: $sortedSample[$sample1idx]";
+      }
+      if($sample2 ne $sortedSample[$sample2idx]){
+        die "ERROR: the sample $sample2 is not the same as the first sample in the sorted list in column 3. Expected: $sortedSample[$sample2idx]";
+      }
+      # Validate the distance
+      defined($dist) or die "ERROR: I don't see a distance for $sortedSample[$sample1idx] $sortedSample[$sample2idx] on line $.\n";
+
+      # Print the next element in the matrix
+      print "\t$dist";
+    }
+    print "\n";
   }
 }
 
@@ -226,7 +306,7 @@ sub usage{
   print "$0: Converts between distance types
   Usage: $0 [options] < infile > outfile
   --informat  FORMAT  The input format.  Default: tsv
-  --outformat FORMAT  The output format. Default: tsv
+  --outformat FORMAT  The output format. Default: stsv
   --symmetric         Make the matrix symmetric. Default: off
   --verbose           Print more things to stderr
   --tempdir   DIR     A temporary directory to use. 
@@ -234,8 +314,9 @@ sub usage{
                       If specified, then the directory will not be deleted.
   --help              This useful help menu
 
-  FORMAT can be: tsv, matrix, or phylip
+  FORMAT can be: tsv, stsv, matrix, or phylip
     where tsv is a three column format of sample1 sample2 distance
+    and stsv is a tsv file where the samples are sorted (`sort -k1,2n`)
     and matrix is a matrix of distances, tab separated, with a header of samples and a first column naming the sample. The first row of the first column needs to have a value but is not read.
     and phylip is a standard format of distances
   \n";
