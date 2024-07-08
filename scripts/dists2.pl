@@ -8,7 +8,7 @@ use File::Basename qw/basename/;
 use File::Temp qw/tempdir/;
 
 use version 0.77;
-our $VERSION = '0.4.0';
+our $VERSION = '0.4.2';
 
 local $0 = basename $0;
 sub logmsg{local $0=basename $0; print STDERR "$0: @_\n";}
