@@ -308,7 +308,6 @@ sub usage{
   Usage: $0 [options] < infile > outfile
   --informat  FORMAT  The input format.  Default: tsv
   --outformat FORMAT  The output format. Default: stsv
-  --symmetric         Make the matrix symmetric. Default: off
   --verbose           Print more things to stderr
   --tempdir   DIR     A temporary directory to use. 
                       If not specified, then a temporary directory chosen by perl that will get deleted.
