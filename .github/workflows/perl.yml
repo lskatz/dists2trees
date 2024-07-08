@@ -35,9 +35,8 @@ jobs:
                 # Note: need to change to actual version number when it is available
                 wget https://github.com/somme89/rapidNJ/archive/refs/tags/latest.tar.gz
                 tar zxvf latest.tar.gz
-                cd rapidNJ-latest/
-                make
-                realpath bin >> $GITHUB_PATH
+                make -C rapidNJ-latest
+                realpath rapidNJ-latest/bin >> $GITHUB_PATH
             - name: Install dependencies
               run: |
                 perl Makefile.PL
