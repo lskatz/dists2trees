@@ -167,7 +167,7 @@ sub readDistances{
   my ($format, $settings) = @_;
   my %dist;
 
-  if($format eq 'tsv'){
+  if($format eq 'tsv' || $format eq 'stsv'){
     while(<>){
       chomp;
       my ($sample1, $sample2, $dist) = split /\t/;
@@ -280,7 +280,7 @@ sub printDistances{
       }
       print "\n";
     }
-  } elsif($format eq 'tsv'){
+  } elsif($format eq 'tsv' || $format eq 'stsv'){
     for my $sample1(@sample){
       for my $sample2(@sample){
         print join("\t", $sample1, $sample2, $$distances{$sample1}{$sample2})."\n";
