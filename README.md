@@ -21,6 +21,11 @@ This package depends on
 
 ```text
   Usage: diststree.pl [options] < infile > outfile.newick
+  --algorithm         quicktree|rapidnj  Default: quicktree
+  --check             Check for all dependencies and then exit
+  --numcpus           default: 1
+  --tempdir           default: a temporary directory that will be deleted.
+                      If provided, then the tempdir will not be deleted.
   --help              This useful help menu
 ```
 

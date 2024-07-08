@@ -14,6 +14,8 @@ jobs:
               uses: shogo82148/actions-setup-perl@v1
               with:
                 perl-version: '5.32'
+                install-modules-with: cpanm
+                install-modules-args: --notest
             
             - name: Install QuickTree
               run: |
@@ -28,6 +30,13 @@ jobs:
                 chmod +x gotree_v0.4.5_amd64_linux
                 # avoid having to set another directory for the path
                 mv -v gotree_v0.4.5_amd64_linux quicktree-2.5/gotree
+            - name: Install rapidnj
+              run: |
+                # Note: need to change to actual version number when it is available
+                wget https://github.com/somme89/rapidNJ/archive/refs/tags/latest.tar.gz
+                tar zxvf latest.tar.gz
+                make -C rapidNJ-latest
+                realpath rapidNJ-latest/bin >> $GITHUB_PATH
             - name: Install dependencies
               run: |
                 perl Makefile.PL
