@@ -8,7 +8,7 @@ use File::Basename qw/basename/;
 use File::Temp qw/tempdir/;
 
 use version 0.77;
-our $VERSION = '0.4.2';
+our $VERSION = '0.5.0';
 
 local $0 = basename $0;
 sub logmsg{local $0=basename $0; print STDERR "$0: @_\n";}
@@ -16,12 +16,13 @@ exit(main());
 
 sub main{
   my $settings={};
-  GetOptions($settings,qw(help informat=s outformat=s symmetric tempdir=s verbose)) or die $!;
+  GetOptions($settings,qw(help informat=s outformat=s symmetric! tempdir=s verbose)) or die $!;
   usage() if($$settings{help} || -t STDIN);
 
   $$settings{informat}||="tsv";
   $$settings{outformat}||="stsv";
   $$settings{tempdir} ||= tempdir("dists2.XXXXXX", TMPDIR => 1, CLEANUP => 1);
+  $$settings{symmetric} //= 1;
   mkdir($$settings{tempdir});
 
   # special conversion cases

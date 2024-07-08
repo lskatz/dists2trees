@@ -36,7 +36,6 @@ This package depends on
   Usage: dists2.pl [options] < infile > outfile
   --informat  FORMAT  The input format.  Default: tsv
   --outformat FORMAT  The output format. Default: stsv
-  --symmetric         Make the matrix symmetric. Default: off
   --help              This useful help menu
 
   FORMAT can be: tsv, stsv, matrix, or phylip
@@ -85,10 +84,10 @@ Convert to phylip from tsv format.
 In this example since distances back and forth between samples are not defined,
 there are stderr messages showing what was corrected.
 If distances are defined and not equal, they will be averaged.
-This correction happens when you specify `--symmetric`.
+You can make the distances one-sided with `--no-symmetric`.
 
 ```bash
-perl scripts/dists2.pl --outformat phylip --symmetric < distances.tsv | column -t
+perl scripts/dists2.pl --outformat phylip < distances.tsv | column -t
 dists2.pl: Setting 2 1 to 17766
 dists2.pl: Setting 3 1 to 11151
 dists2.pl: Setting 4 1 to 23481
@@ -105,7 +104,7 @@ dists2.pl: Setting 4 3 to 25817
 ### Make a tree
 
 ```bash
-perl scripts/dists2.pl --outformat phylip --symmetric < distances.tsv | \
+perl scripts/dists2.pl --outformat phylip < distances.tsv | \
   perl scripts/diststree.pl 
 
 (2:3751.75,(3:9843.75,1:1307.25):15807.25,4:3266.25);
@@ -131,7 +130,7 @@ for i in {1..100}; do
   # Transform these distances to phylip and then into a tree.
   # The trees are being printed to stdout, but
   # stdout will be printed to a file at the end of the loop.
-  perl scripts/dists2.pl --symmetric --outformat phylip < bootstraps/dist.$i.tsv | \
+  perl scripts/dists2.pl --outformat phylip < bootstraps/dist.$i.tsv | \
     perl scripts/diststree.pl 
 done > bootstraps.dnd
 # => bootstraps.dnd should have 100 trees in it now
@@ -147,7 +146,7 @@ head -n 3 bootstraps.dnd
 Run `gotree` to add supports
 
 ```bash
-perl scripts/dists2.pl --outformat phylip --symmetric < distances.tsv | \
+perl scripts/dists2.pl --outformat phylip < distances.tsv | \
   perl scripts/diststree.pl | \
   gotree compute support classical --bootstrap bootstraps.dnd > withbs.dnd
 Classical Support
