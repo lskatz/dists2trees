@@ -15,11 +15,8 @@ END{
 }
 
 subtest 'Dependencies' => sub{
-  my @exe = sort qw(diststree.pl dists2.pl quicktree);
-  for my $exe(@exe){
-    which($exe) or BAIL_OUT("ERROR: could not find $exe in your PATH");
-  }
-  pass("Found dependencies in PATH: ".join(", ", @exe));
+  system("diststree.pl --check");
+  is($?, 0, "Dependencies are met");
 };
 
 subtest 'Make sample data' => sub{
@@ -44,16 +41,32 @@ subtest 'Make sample data' => sub{
 };
 
 subtest 'trees' => sub{
-  srand(42);
 
-  system("diststree.pl < $testTsv.phylip > $testTsv.phylip.newick");
-  is($?, 0, "diststree.pl ran successfully");
-  isnt(-e "$testTsv.phylip.newick", 0, "Created test newick file");
+  subtest 'quicktree' => sub{
+    srand(42);
+    system("diststree.pl --algorithm quicktree < $testTsv.phylip > $testTsv.phylip.newick");
+    is($?, 0, "diststree.pl ran successfully");
+    isnt(-e "$testTsv.phylip.newick", 0, "Created test newick file");
   
-  my $exp = "(1:1,(2:0.25,0:1.25):0.5,3:2);";
-  open(my $fh, "<", "$testTsv.phylip.newick") or die "ERROR: could not read $testTsv.phylip.newick: $!";
-  my $obs = <$fh>;
-  chomp($obs);
-  close $fh;
-  is($obs, $exp, "Expected newick tree");
+    my $exp = "(1:1,(2:0.25,0:1.25):0.5,3:2);";
+    open(my $fh, "<", "$testTsv.phylip.newick") or die "ERROR: could not read $testTsv.phylip.newick: $!";
+    my $obs = <$fh>;
+    chomp($obs);
+    close $fh;
+    is($obs, $exp, "Expected newick tree");
+  };
+
+  subtest 'rapidnj' => sub{
+    srand(42);
+    system("diststree.pl --algorithm rapidnj < $testTsv.phylip > $testTsv.phylip.newick");
+    is($?, 0, "diststree.pl ran successfully");
+    isnt(-e "$testTsv.phylip.newick", 0, "Created test newick file");
+
+    my $exp = "(('2':0.25,'0':1.25):0.5,'1':1,'3':2);";
+    open(my $fh, "<", "$testTsv.phylip.newick") or die "ERROR: could not read $testTsv.phylip.newick: $!";
+    my $obs = <$fh>;
+    chomp($obs);
+    close $fh;
+    is($obs, $exp, "Expected newick tree");
+  };
 };
