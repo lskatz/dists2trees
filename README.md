@@ -1,6 +1,8 @@
 # dists2trees
 
-Converts between distance formats. Also: making trees from those distances.
+Making trees from distances.
+
+Also, distance format conversion (phylip, etc)
 
 ## Installation
 
